@@ -78,7 +78,9 @@ int main(int argc, char** argv) {
 // MPI_Finalize  = Terminates MPI execution environment, all processes must call
 //                 call this routing before exiting.                  
 
-// 
+// Structure
+// All processors compute a part of the integral and then send their result to 
+// rank 0 processor, which adds them all to give the final value
 
 // Misc
 // Info about communicators
