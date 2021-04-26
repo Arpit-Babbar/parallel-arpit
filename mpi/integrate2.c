@@ -23,9 +23,9 @@ int main(int argc, char** argv) {
    double a = 0.0, b = 0.5 * M_PI;
 
    // Set rank 0 to do non-blocking recieve
-   MPI_Status statuses[size-1];  // CLUELESS. Source at bottom
-   int        requests[size-1];
-   double     tmp[size-1];       // Temporary variable to recieve 
+   MPI_Status  statuses[size-1];  // CLUELESS. Source at bottom
+   MPI_Request requests[size-1];
+   double      tmp[size-1];       // Temporary variable to recieve 
                                  // results from other processors
    if (rank==0)
    {
