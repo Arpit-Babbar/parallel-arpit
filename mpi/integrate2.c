@@ -23,23 +23,24 @@ int main(int argc, char** argv) {
    double a = 0.0, b = 0.5 * M_PI;
 
    // Set rank 0 to do non-blocking recieve
-   MPI_Status  statuses[size-1];  // CLUELESS. Source at bottom
-   MPI_Request requests[size-1];
-   double      tmp[size-1];       // Temporary variable to recieve 
+   MPI_Status  statuses[size];  // CLUELESS. Source at bottom
+   MPI_Request requests[size];
+   double      tmp[size];       // Temporary variable to recieve 
                                  // results from other processors
+  // 0th element will not be used.
    if (rank==0)
    {
       printf("Number of procs = %d\n", size);
       for (int i = 1; i < size; i++)
       {
          // non-blocking receive
-         ierror = MPI_Irecv(&tmp[i-1],        // variable to recieve buffer in
+         ierror = MPI_Irecv(&tmp[i],        // variable to recieve buffer in
                            1,              // maximum number of elements in receive buffer
                            MPI_DOUBLE,     // MPI double
                            i,              // rank of source
                            0,              // message tag(integer). Unused here
                            MPI_COMM_WORLD, // MPI Communicator. Visit link at bottom
-                           &requests[i-1]
+                           &requests[i]
                            // &status         // CLUELESS. Source at bottom
                            );
          // int sender = status.MPI_SOURCE; // CLUELESS. Source at bottom
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
       double res = psum;   // Total result stored here
       ierror = MPI_Waitall(size-1, requests, statuses);
       for (int i=0; i< size-1; i++)
-         res = res + tmp[i];
+         res = res + tmp[i+1];
       printf("Result = %f\n", res);
    }
    // other ranks send their results to rank 0
