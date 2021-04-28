@@ -128,35 +128,33 @@ int main(int argc, char** argv)
   const double xmin = 0.0, xmax = 1.0;
   const double coeff = 1.0;
   // Scheme parameters
-  const int N = 50;                                // number of points
+  const int N = 100;                                // number of points
   const double h = (xmax-xmin) / N;                          // grid size                 
   double cfl = 0.95;
   double dt = cfl * h / abs(coeff);
-  double Tf = 1.0; 
+  double Tf = 1.6; 
 
   // Points per processor
   int myN = (int) floor(N/size);                     
   // Account for 1 potential uncounted point
   if (rank==size-1)
-    myN = floor(N/size) + (N-floor(N/size)*size); 
+    myN = floor(N/size) + (N-floor(N/size)*size);
   double myh = (xmax-xmin)/myN;
   double u[myN+2], u0[myN+2], u_exact[myN+2];              // Soln with 2 ghosts/proc
-  printf("My rank is %d, size is %d\n", rank, size);
-  double mya = xmin + rank * (xmax-xmin)/size;      
-  printf("mya = %f\n", mya);
+  printf("My rank is %d, size is %d\n", rank, size);    
 
   double grid[myN+1];                                    // CHECK
 
-  for (int i = 1; i <= myN+1; i++)
+  for (int i = 1; i <= myN; i++)
   {
-    grid[i] = mya + (i-1) * h;
-    u[i]  = init_condn(grid[i]); // updating non-ghost values
+    grid[i] = xmin + rank * floor(N/size) * h + (i-1) * h;
+    u[i]    = init_condn(grid[i]); // updating non-ghost values
     u_exact[i] = init_condn(grid[i] - coeff * Tf);
   }
-
+  // FIX REPETTTION
   int it = 0;
   double t = 0;
-  while (t<Tf)
+  while (t < Tf)
   {
     update_soln(u0, u, myN, cfl, dt, rank, size);
     t  += dt;
