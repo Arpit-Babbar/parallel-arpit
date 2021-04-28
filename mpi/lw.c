@@ -26,7 +26,7 @@ void output_vectors_to_file(double grid[], double u[], double u_exact[],
         printf("Could not open file, exiting...\n");
         exit(0);
     }
-    for (int j = 1; j < myN; j++)
+    for (int j = 1; j <= myN; j++)
         fprintf(fptr, "%f %f %f\n", grid[j], u[j], u_exact[j]);
     fclose(fptr);
     // Source - https://www.programiz.com/c-programming/c-file-input-output
@@ -108,7 +108,7 @@ void update_soln(double u0[], double u[], double myN, double cfl,
   MPI_Status statuses[4];
   int ierror;
   for (int i = 1; i<= myN; i++)
-    u0[i] = u[i-1];
+    u0[i] = u[i];
   update_ghost(u0, myN, rank, size, recv_req, send_req);
   ierror = MPI_Waitall(2, recv_req, statuses);
   for (int i = 1; i <= myN; i++)
@@ -140,16 +140,16 @@ int main(int argc, char** argv)
   if (rank==size-1)
     myN = floor(N/size) + (N-floor(N/size)*size); 
   double myh = (xmax-xmin)/myN;
-  double u[myN], u0[myN+2], u_exact[myN];              // Soln with 2 ghosts/proc
+  double u[myN+2], u0[myN+2], u_exact[myN+2];              // Soln with 2 ghosts/proc
   printf("My rank is %d, size is %d\n", rank, size);
   double mya = xmin + rank * (xmax-xmin)/size;      
   printf("mya = %f\n", mya);
 
-  double grid[myN];                                    // CHECK
+  double grid[myN+1];                                    // CHECK
 
-  for (int i = 0; i < myN; i++)
+  for (int i = 1; i <= myN+1; i++)
   {
-    grid[i] = mya + i * h;
+    grid[i] = mya + (i-1) * h;
     u[i]  = init_condn(grid[i]); // updating non-ghost values
     u_exact[i] = init_condn(grid[i] - coeff * Tf);
   }

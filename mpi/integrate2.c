@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
                            // &status         // CLUELESS. Source at bottom
                            );
          // int sender = status.MPI_SOURCE; // CLUELESS. Source at bottom
-      }
+      } 
    }
    // Each machine will integrate over a particular part, as specified by the
    // rank of the machine. Here, we specify limits for current machine(called "me")
