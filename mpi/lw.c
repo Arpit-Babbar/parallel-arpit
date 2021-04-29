@@ -88,9 +88,11 @@ void update_ghost(double u0[], int myN, // Maybe find size yourself?
   if (size==1) // Serial case
   {
     u0[0] = u0[myN], u0[myN+1] = u0[1];
-    // MPI_Grequest_complete(recv_req[0]); Not working
     return;
   }
+  // Upstream version merged the three cases by defining 
+  // int left, right
+  // That's much better.
   if (rank==0)
   {
     recv_value(size-1, 0    , &recv_req[0], u0); // fill my u[ 0] by size-1
@@ -128,8 +130,13 @@ void update_soln(double u0[], double u[], double myN, double sigma,
   for (int i = 1; i<= myN; i++) // Update solution_old
     u0[i] = u[i]; 
   update_ghost(u0, myN, rank, size, recv_req, send_req);
-  if (size > 1)                 // Serial case
+  if (size>1)
+  {
     ierror = MPI_Waitall(2, recv_req, statuses);
+    ierror = MPI_Waitall(2, send_req, statuses); // Important!
+  // send_req is also needed, or you'd send a wrong version to the other
+  // processors. This was learnt from upstream version.
+  }
   for (int i = 1; i <= myN; i++)
     u[i] = u0[i] - 0.5 * sigma * (u0[i+1]  - u0[i-1])
             + 0.5 * sigma * sigma * (u0[i-1] - 2.0 * u0[i] + u0[i+1]);
@@ -146,6 +153,7 @@ int main(int argc, char** argv)
 
   // Scheme parameters
   const double dx = (xmax-xmin) / N;                          // cell sizes                 
+  // dx chosen so that the last grid point equals xmax-dx
   double sigma = coeff * cfl;
   double dt = cfl * dx / fabs(coeff);
 
