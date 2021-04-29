@@ -14,4 +14,4 @@ double init_condn(double x)
 
 const int N = 100;                                // number of points
 const double cfl = 0.95;
-const double Tf = 0.2;
+const double Tf = 1.0;

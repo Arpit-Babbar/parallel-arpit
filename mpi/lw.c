@@ -148,22 +148,24 @@ int main(int argc, char** argv)
   const double dx = (xmax-xmin) / N;                          // cell sizes                 
   double sigma = coeff * cfl;
   double dt = cfl * dx / fabs(coeff);
-  
 
-  // Points per processor
+  print("dt = %f\n", dt);
+  
+  // Grid points per processor
   int myN = (int) floor(N/size);                     
   if (rank==size-1)
     myN = floor(N/size) + (N-floor(N/size)*size); // possible uncounted pts
   double myh = (xmax-xmin)/myN;
 
-  double u[myN+2], u0[myN+2], u_exact[myN+2];              // Soln with 2 ghosts/proc
+  double u[myN+2], u0[myN+2], u_exact[myN+2];   // Soln with 2 ghosts/proc
+                                                
+  double grid[myN+2];                         
+  // Only non-ghost indices used in u, u_exact, grid
 
-  double grid[myN+1]; // Only non-ghost indices are relevant 
-
-  for (int i = 1; i <= myN; i++) // Set initial soln and final exact soln
+  for (int i = 1; i <= myN; i++) // initial soln, final exact soln set
   {
     grid[i] = xmin + rank * floor(N/size) * dx + (i-1) * dx;
-    u[i]    = init_condn(grid[i]); // updating non-ghost values
+    u[i]    = init_condn(grid[i]); 
     u_exact[i] = init_condn(grid[i] - coeff * Tf);
   }
   int it = 0; double t = 0.0;
