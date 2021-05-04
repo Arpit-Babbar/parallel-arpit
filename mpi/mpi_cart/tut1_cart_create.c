@@ -138,6 +138,11 @@ int MPI_Cart_create(
                                          // cartesian topology (handle. ?)
                     )
 
+// Notice that this does not mention the actual problem size. Apparently, 
+'it's the user's job to take care of data distribution. All MPI can do is
+keep track of data distribution'.
+
+
 // This function determines process coordinates of the particular rank
 int MPI_Cart_coords(
                     MPI_Comm comm, // Communicator of the cartesian topology
@@ -146,6 +151,9 @@ int MPI_Cart_coords(
                                    // (in the calling program. ?)
                     int coords[]   // Vector to store the coordinates in
                     )
+NOTE - If rank reordering is allowed, a process should first obtain its rank
+from MPI_Comm_rank(MPI_COMM_WORLD, &rank).
+
 
 // This simple function gives rank corresponding to a particular set of coordinates
 

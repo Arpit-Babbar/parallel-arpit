@@ -1,8 +1,10 @@
 // Tutorial 2
 
-// In the previous code, we chose a specific way to split processes. However,
-// there's no reason for that choice to be optimum. To get the optimum choice,
-// we use the MPI_Dims_create() function.
+// In this tutorial, we see the neighbours of a particular point in grid
+// along a specified axis towards specifed positive/negative side with 
+// specified distance.
+
+// For easy understanding, we keep periodicity in all directions.
 
 #include <stdio.h>
 #include <assert.h>
@@ -19,7 +21,7 @@ int main(int argc, char** argv)
 
   int ndims = 2;
   int dims[ndims];
-  int periodicity[] = {0,1};
+  int periodicity[] = {1,1};
 
   MPI_Comm comm_cart;
 
@@ -38,6 +40,20 @@ int main(int argc, char** argv)
                          0,              // Don't reorder processes
                          &comm_cart      // output communicator
                         );
+  int direction = 0;
+  int disp = -1;
+  int rank_source, rank_dest;
+
+  ierr = MPI_Cart_shift(comm_cart,
+                        direction,
+                        disp,
+                        &rank_source, &rank_dest);
+  
+  printf("My rank is %d.\n", rank);
+  printf("Along direction %d and displacement %d, my neighbour's rank is %d.\n",
+          direction, disp, rank_source);
+  printf("Going opposite, my neighbour has rank %d.\n",
+          rank_dest);
 
   int coords[2];
   MPI_Cart_coords(comm_cart,
@@ -45,16 +61,9 @@ int main(int argc, char** argv)
                   2,
                   coords
                   );
-  printf("Co-ordinates of rank %d are %d x %d\n", rank, coords[0], coords[1]);
-  if (rank == size-1)
-    for (int i = 0; i < dims[0]; i++)
-      for (int j = 0; j < dims[1]; j++)
-      {
-        int corr_rank;
-        coords[0] = i, coords[1] = j;
-        ierr = MPI_Cart_rank(comm_cart, coords, &corr_rank);
-        printf("Rank corresponding to %d x %d is %d\n",i, j, corr_rank);
-      }
+  printf("Co-ordinates of my rank are %d x %d\n", coords[0], coords[1]);
+
+
   ierr = MPI_Finalize();
   return 0;
 }
@@ -68,9 +77,25 @@ int MPI_Dims_create(int nnodes, // Number of nodes in grid
 Interesting how this has nothing to do with MPI. It'll just always work. Should
 we only be doing this with one processor btw?
 
-NOTE - If we leave an entry as non-zero, MPI_Dims_create() would take it to 
+NOTE - If we leave an entry as non-zero, MPI_Dims_create() would take it to
 mean that we want the number of processors in that dimension to be that
 non-zero entry. With the non-zero entries fixed, the function fills the zero
 entries in the optimum way.
 
+// MPI_Cart_shift
+
+Returns the shifted source and destination ranks, given a shift direction and 
+amount.
+
+MPI_Cart_shift(MPI_Comm comm,
+              int direction,    // The axis along which we'd move
+              int disp,         // The sign and amount of displacement 
+                                // along the axis specified in direction
+              int *rank_source, // My rank, i.e., current rank
+              int *rank_dest)   // Rank of my neighbour along specified
+                                // direction and displacement.
+
+The book says incorrect wrong will be returned as MPI_PROC_NULL and no
+communication will take place if those are given as arguments. But, I am
+getting negative values. Isn't that different? Hm...
 */
