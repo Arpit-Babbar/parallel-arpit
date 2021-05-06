@@ -1,7 +1,7 @@
 // ut + a ux = 0 using Lax-Wendroff
 
 #include <stdio.h>
-#include <stdlib.h> // for exit(0)
+#include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
 #include <math.h>

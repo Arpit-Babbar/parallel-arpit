@@ -4,8 +4,6 @@
 // along a specified axis towards specifed positive/negative side with 
 // specified distance.
 
-// For easy understanding, we keep periodicity in all directions.
-
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
@@ -21,7 +19,7 @@ int main(int argc, char** argv)
 
   int ndims = 2;
   int dims[ndims];
-  int periodicity[] = {1,1};
+  int periodicity[] = {0,0};
 
   MPI_Comm comm_cart;
 
@@ -50,10 +48,17 @@ int main(int argc, char** argv)
                         &rank_source, &rank_dest);
   
   printf("My rank is %d.\n", rank);
-  printf("Along direction %d and displacement %d, my neighbour's rank is %d.\n",
-          direction, disp, rank_source);
-  printf("Going opposite, my neighbour has rank %d.\n",
-          rank_dest);
+  if (rank_source != MPI_PROC_NULL)
+    printf("Along direction %d and displacement %d, my neighbour's rank is %d.\n",
+            direction, disp, rank_source);
+  else
+    printf("Along direction %d and displacement %d, I don't have a neighbour.\n",
+            direction, disp);
+  if (rank_dest != MPI_PROC_NULL)
+    printf("Going opposite, my neighbour has rank %d.\n",
+            rank_dest);
+  else
+    printf("Going opposite, I don't have a neighbour.\n");
 
   int coords[2];
   MPI_Cart_coords(comm_cart,
