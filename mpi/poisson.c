@@ -117,9 +117,9 @@ int main(int argc, char** argv)
   
   // We obtain mycoord from MPI_Cart_coords()
   ierr = MPI_Cart_coords(GRID_COMM_WORLD,   //communicator
-                          myid_grid,         // my rank
-                          p_dim,             // Dimension of grid
-                          mycoord            // Array to store coordinates in
+                         myid_grid,         // my rank
+                         p_dim,             // Dimension of grid
+                         mycoord            // Array to store coordinates in
                          );
 
   for (int i = 0; i < p_dim; i++)
@@ -137,6 +137,7 @@ int main(int argc, char** argv)
   }
   
   int Ni = local_dim[2], Nj = local_dim[1], Nk = local_dim[0]; 
+  printf("Ni, Nj, Nk = %d, %d, %d\n", Ni, Nj, Nk);
   // Don't know why the ordering has been changed!!
   double phi[Ni+1][Nj+1][Nk+1][2];
   
@@ -168,6 +169,7 @@ int main(int argc, char** argv)
   int disp = -1;
   for (int dir = 0; dir < p_dim; dir++)
   {
+    
     int source, dest;
     ierr = MPI_Cart_shift(GRID_COMM_WORLD, dir, disp, &source, &dest);
     if (dest != MPI_PROC_NULL) // non-boundary, neighbour on 'left'
@@ -184,18 +186,19 @@ int main(int argc, char** argv)
   double maxdelta; // Difference b/w two jacobi iterates, measures convergence
 
   int tag = 0; // Unused?
-  int itermax = 500; // Doing 10 iterations for no reason, should use maxdelta
-  double eps = 0.000000001;
+  int itermax = 10000; // Doing 10 iterations for no reason, should use maxdelta
+  double eps = 1e-10;
   int source, dest; // Neighbouring processors with which we'd trade.
                     // For example, if my cartesian rank is (1,1),
                     // my neighbours in 0 direction are (2,1) and (0,1).
                     // These will be obtained from MePI_Cart_shift
-  double iter = 0;
-  while ((iter < itermax))
+  int iter = 0;
+  while (iter < itermax)
   {
     maxdelta = 0.0;
-    for (int disp = -1; disp <= 1; disp = disp + 2) // disp = -1,1 to cover
-                                                    // both directions
+    printf("iter = %d \n", iter);
+    for (int disp = -1; disp <= 1; disp = disp + 2) // disp = -1,1 to cover both directions
+    {
       for (int dir = 0; dir < 3; dir++) // Looping over all directions.
       {
         MPI_Request req;
@@ -242,12 +245,13 @@ int main(int argc, char** argv)
                              MPI_MAX,
                              GRID_COMM_WORLD
                             );
-        printf("maxdelta = %f\n", maxdelta);
-        if (maxdelta < eps)
-          break;
         iter += 1;
         int tmp = t0; t0 = t1; t1 = tmp; // Swap t0 and t1
       }
+    }
+    printf("iter = %d, eps = %.16f, maxdelta = %.16f\n", iter, eps, maxdelta);
+    if (maxdelta < eps)
+      break;
   }
   ierr = MPI_Finalize();
   return 0;
