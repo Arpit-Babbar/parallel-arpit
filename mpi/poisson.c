@@ -21,12 +21,12 @@ double f(double x, double y, double z) // Source term
 void CopySendBuf(int Ni, int Nj, int Nk, // local_dim(pts in dimension) 
                  double phi[][Nj][Nk][2],                // Array
                  int t0,
-                 double disp, double dir, double fieldSend[], double MaxBufLen);
+                 double disp, double dir, double fieldSend[], int MaxBufLen);
 
 void CopyRecvBuf(int Ni, int Nj, int Nk, // local_dim(pts in dimension) 
                  double phi[][Nj][Nk][2],                // Array
                  int t0, 
-                 double disp, double dir, double fieldRecv[], double MaxBufLen);
+                 double disp, double dir, double fieldRecv[], int MaxBufLen);
 
 void Jacobi_sweep(int Ni, int Nj, int Nk,
                   int udim[2][3], // local_dim(pts in dimension) 
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
   // The book does this by taking input from user, which is why they do 
   // it only in id 0. We should make an input file. Input from user will be
   // too slow.
-  int N = 100;
+  int N = 60; // WHY DOES IT ONLY WORK FOR N LESS THAN 80???
   if (myid == 0)
   {
     for (int i = 0; i < p_dim; i++)
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
   }
   
   int Ni = local_dim[2], Nj = local_dim[1], Nk = local_dim[0]; 
-  printf("Ni, Nj, Nk = %d, %d, %d\n", Ni, Nj, Nk);
+  printf("For rank %d, Ni, Nj, Nk = %d, %d, %d\n", myid, Ni, Nj, Nk);
   // Don't know why the ordering has been changed!!
   double phi[Ni+1][Nj+1][Nk+1][2];
   
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
   double fieldRecv[MaxBufLen]; // Place where we'd recieve and move to phi
 
   // At the boundary partitions of the grid, there may be no neighbours.
-  // At those boundaries, we'd just leave the Dirichlet BC as it is
+  // At those boundaries, we'd just leave the Dirichlet BC as it is.
   // If we don't do that, since MPI doesn't put any halo layers on those sides,
   // we'd get a segmentation fault.
 
@@ -167,9 +167,9 @@ int main(int argc, char** argv)
   // for all 3 directions dir
   int udim[2][p_dim];
   int disp = -1;
+  // TO BE DEBUGGED BY UNIT TESTS
   for (int dir = 0; dir < p_dim; dir++)
   {
-    
     int source, dest;
     ierr = MPI_Cart_shift(GRID_COMM_WORLD, dir, disp, &source, &dest);
     if (dest != MPI_PROC_NULL) // non-boundary, neighbour on 'left'
@@ -180,13 +180,14 @@ int main(int argc, char** argv)
       udim[1][dir] = local_dim[dir];
     else                         // boundary, no neighbour on 'right'
       udim[1][dir] = local_dim[dir] - 1;
-  }
+  } // udim[][0] -> Nk, udim[][1] -> Nj, udim[][2y] -> Ni
+
 
   int t0=0, t1=1;
   double maxdelta; // Difference b/w two jacobi iterates, measures convergence
 
   int tag = 0; // Unused?
-  int itermax = 10000; // Doing 10 iterations for no reason, should use maxdelta
+  int itermax = 1000; // Doing 10 iterations for no reason, should use maxdelta
   double eps = 1e-10;
   int source, dest; // Neighbouring processors with which we'd trade.
                     // For example, if my cartesian rank is (1,1),
@@ -196,7 +197,6 @@ int main(int argc, char** argv)
   while (iter < itermax)
   {
     maxdelta = 0.0;
-    printf("iter = %d \n", iter);
     for (int disp = -1; disp <= 1; disp = disp + 2) // disp = -1,1 to cover both directions
     {
       for (int dir = 0; dir < 3; dir++) // Looping over all directions.
@@ -245,11 +245,12 @@ int main(int argc, char** argv)
                              MPI_MAX,
                              GRID_COMM_WORLD
                             );
-        iter += 1;
         int tmp = t0; t0 = t1; t1 = tmp; // Swap t0 and t1
       }
     }
-    printf("iter = %d, eps = %.16f, maxdelta = %.16f\n", iter, eps, maxdelta);
+    iter += 1;
+    if (myid==0)
+      printf("iter = %d, eps = %.16f, maxdelta = %.16f\n", iter, eps, maxdelta);
     if (maxdelta < eps)
       break;
   }
@@ -259,7 +260,7 @@ int main(int argc, char** argv)
 
 // Copy what I am sending to my neighbour to MaxBufLen
 void CopySendBuf(int Ni, int Nj, int Nk, double phi[][Nj][Nk][2], int t0, 
-                 double disp, double dir, double fieldSend[], double MaxBufLen)
+                 double disp, double dir, double fieldSend[], int MaxBufLen)
 {
   int i1, i2, j1, j2, k1, k2; // left, right limits in appropriate directions
   int start = 0;
@@ -301,14 +302,17 @@ void CopySendBuf(int Ni, int Nj, int Nk, double phi[][Nj][Nk][2], int t0,
   for (int i = i1; i <= i2; i++)
     for (int j = j1; j <= j2; j++)
       for(int k = k1; k <= k2; k++)
+      {
         fieldSend[c] = phi[i][j][k][t0];
+        // c = c+1;
+      }
   assert( (c<MaxBufLen) && "CopySendBuff: SendBuff larger than expected.");
 }
 
 void CopyRecvBuf(int Ni, int Nj, int Nk,  // local_dim(pts in dimension) 
                  double phi[][Nj][Nk][2], // Array
                  int t0, 
-                 double disp, double dir, double fieldRecv[], double MaxBufLen)
+                 double disp, double dir, double fieldRecv[], int MaxBufLen)
 {
   int i1, i2, j1, j2, k1, k2; // left, right limits in appropriate directions
   int start = 0;
@@ -349,7 +353,11 @@ void CopyRecvBuf(int Ni, int Nj, int Nk,  // local_dim(pts in dimension)
   for (int i = i1; i <= i2; i++)
     for (int j = j1; j <= j2; j++)
       for(int k = k1; k <= k2; k++)
+      {
         phi[i][j][k][t0] = fieldRecv[c];
+        printf("New value = %f \n",phi[i][j][k][t0]);
+        // c = c+1;
+      }
   assert( (c<MaxBufLen) && "CopySendBuff: SendBuff larger than expected.");
 }
 
@@ -374,6 +382,21 @@ void Jacobi_sweep(int Ni, int Nj, int Nk,
                              + (phi[i][j][k+1][t0] + phi[i][j][k-1][t0]) ) / 6.0;
         *maxdelta = fmax(*maxdelta, fabs(phi[i][j][k][t1]-phi[i][j][k][t0]));
       }
+  /* The code 
+    for (int i = udim[0][2]; i <= udim[1][2]; i++)
+    for (int j = udim[0][1]; j <= udim[1][1]; j++)
+      for (int k = udim[0][0]; k <= udim[1][0]; k++)
+      {
+        // printf("(%d,%d,%d)\n",i,j,k);
+        x = xmin + i * h, y = ymin + j * h, z = zmin + k * h;
+        phi[i][j][k][t1] = ( h*h * f(x,y,z)  
+                             + (phi[i+1][j][k][t0] + phi[i-1][j][k][t0]) 
+                             + (phi[i][j+1][k][t0] + phi[i][j-1][k][t0]) 
+                             + (phi[i][j][k+1][t0] + phi[i][j][k-1][t0]) ) / 6.0;
+        *maxdelta = fmax(*maxdelta, fabs(phi[i][j][k][t1]-phi[i][j][k][t0]));
+      }
+   is working fine, so there's an issue with exchange? Hm...
+   */
 }
 
 
