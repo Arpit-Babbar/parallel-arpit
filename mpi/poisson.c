@@ -187,7 +187,7 @@ int main(int argc, char** argv)
   double maxdelta; // Difference b/w two jacobi iterates, measures convergence
 
   int tag = 0; // Unused?
-  int itermax = 1000; // Doing 10 iterations for no reason, should use maxdelta
+  int itermax = 10000; // Doing 10 iterations for no reason, should use maxdelta
   double eps = 1e-10;
   int source, dest; // Neighbouring processors with which we'd trade.
                     // For example, if my cartesian rank is (1,1),
@@ -304,7 +304,7 @@ void CopySendBuf(int Ni, int Nj, int Nk, double phi[][Nj][Nk][2], int t0,
       for(int k = k1; k <= k2; k++)
       {
         fieldSend[c] = phi[i][j][k][t0];
-        // c = c+1;
+        c = c+1;
       }
   assert( (c<MaxBufLen) && "CopySendBuff: SendBuff larger than expected.");
 }
@@ -355,8 +355,8 @@ void CopyRecvBuf(int Ni, int Nj, int Nk,  // local_dim(pts in dimension)
       for(int k = k1; k <= k2; k++)
       {
         phi[i][j][k][t0] = fieldRecv[c];
-        printf("New value = %f \n",phi[i][j][k][t0]);
-        // c = c+1;
+        // printf("New value = %f \n",phi[i][j][k][t0]);
+        c = c+1;
       }
   assert( (c<MaxBufLen) && "CopySendBuff: SendBuff larger than expected.");
 }
