@@ -55,13 +55,15 @@ int main(int argc, char** argv) {
 // ierror = integer indicating success or failure returned by
 //          MPI_Init, MPI_Comm_size, MPI_Comm_rank
 
-// Functions
-// MPI_Init      = Initializes MPI, taking number of processors from
-//                 command line
-// MPI_Comm_size = Puts communication size in the variable `size`
-// MPI_Comm_rank = Puts rank of current processor in variable `rank`
-// MPI_Finalize  = Terminates MPI execution environment, all processes must call
-//                 call this routing before exiting.                  
+/*
+Functions
+MPI_Init      = Initializes MPI, taking number of processors from
+                command line
+MPI_Comm_size = Puts communication size in the variable `size`
+MPI_Comm_rank = Puts rank of current processor in variable `rank`
+MPI_Finalize  = Terminates MPI execution environment, all processes must call
+                call this routing before exiting.                  
+*/
 
 // Structure
 // In this code, processor 0 doesn't iteratively wait for each processor to 

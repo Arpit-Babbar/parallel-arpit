@@ -9,23 +9,26 @@
 #include <math.h>
 #include <mpi.h>
 
+void set2zero(int arr[], int size);
+
 int main(int argc, char** argv)
 {
   int rank, size, ierr;
-  
+
   ierr = MPI_Init(&argc, &argv);
   ierr = MPI_Comm_size(MPI_COMM_WORLD, &size);
   ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   int ndims = 2;
-  int dims[ndims];
-  int periodicity[] = {0,1};
+  int dims[ndims]; set2zero(dims,ndims); // Initialize array and set it to zero
+  int periodicity[] = {0,1};             // open, periodic
 
   MPI_Comm comm_cart;
 
-  ierr = MPI_Dims_create(size,  // number of nodes in grid
-                         ndims, // Actual dimension of grid
-                         dims   // Array to store processors in each dimension
+  ierr = MPI_Dims_create(size,  // number of nodes in grid, i.e., processes
+                         ndims, // Input actual dimension of grid(2,3,etc.)
+                         dims   // Output array(Ex:- (2,2) reflecting 2 X 2)
+                         // dims is also input, see 'NOTE' at bottom.
                          );
 
   if (rank == 0)
@@ -58,6 +61,13 @@ int main(int argc, char** argv)
   ierr = MPI_Finalize();
   return 0;
 }
+
+void set2zero(int arr[], int size)
+{
+  for(int i=0;i<size;i++)
+    arr[i]=0;
+}
+
 /*
 
 int MPI_Dims_create(int nnodes, // Number of nodes in grid
@@ -68,7 +78,7 @@ int MPI_Dims_create(int nnodes, // Number of nodes in grid
 Interesting how this has nothing to do with MPI. It'll just always work. Should
 we only be doing this with one processor btw?
 
-NOTE - If we leave an entry as non-zero, MPI_Dims_create() would take it to 
+NOTE - If we leave an entry as non-zero, MPI_Dims_create() would take it to
 mean that we want the number of processors in that dimension to be that
 non-zero entry. With the non-zero entries fixed, the function fills the zero
 entries in the optimum way.

@@ -25,8 +25,8 @@ int main(int argc, char** argv) {
    // Set rank 0 to do non-blocking recieve
    MPI_Status  statuses[size];  // CLUELESS. Source at bottom
    MPI_Request requests[size];
-   double      tmp[size];       // Temporary variable to recieve 
-                                 // results from other processors
+   double      tmp[size];       // Temporary variable to recieve
+                                // results from other processors
   // 0th element will not be used.
    if (rank==0)
    {
@@ -34,16 +34,15 @@ int main(int argc, char** argv) {
       for (int i = 1; i < size; i++)
       {
          // non-blocking receive
-         ierror = MPI_Irecv(&tmp[i],        // variable to recieve buffer in
+         ierror = MPI_Irecv(&tmp[i],       // variable to recieve buffer in
                            1,              // maximum number of elements in receive buffer
                            MPI_DOUBLE,     // MPI double
                            i,              // rank of source
                            0,              // message tag(integer). Unused here
                            MPI_COMM_WORLD, // MPI Communicator. Visit link at bottom
                            &requests[i]
-                           // &status         // CLUELESS. Source at bottom
+                           // &status      // CLUELESS. Source at bottom
                            );
-         // int sender = status.MPI_SOURCE; // CLUELESS. Source at bottom
       } 
    }
    // Each machine will integrate over a particular part, as specified by the
@@ -97,8 +96,12 @@ int main(int argc, char** argv) {
 // give their results. When that is available, it adds them to get
 // the final result
 
-// Misc
-// Info about communicators
-// https://www.codingame.com/playgrounds/47058/have-fun-with-mpi-in-c/mpi-communicators
-// MPI_Status source - 
-// https://www.geeksforgeeks.org/sum-of-an-array-using-mpi/
+/*
+Misc
+Info about communicators
+https://www.codingame.com/playgrounds/47058/have-fun-with-mpi-in-c/mpi-communicators
+MPI_Status source - 
+https://www.geeksforgeeks.org/sum-of-an-array-using-mpi/
+MPI Status info
+https://docs.microsoft.com/en-us/message-passing-interface/mpi-status-structure
+*/

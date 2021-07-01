@@ -18,19 +18,19 @@
 int check_prime(int n);
 void factorize2d(int n, int dims[2]); // split n = k*l with largest k
 
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
   int rank, size, ierr;
-  
+
   ierr = MPI_Init(&argc, &argv);
   ierr = MPI_Comm_size(MPI_COMM_WORLD, &size);
   ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    
+
   assert (check_prime(size)==1 && "Enter a non-prime np\n");
   int ndims  = 2; // Actual dimension of the cartesian mesh
   int dims[2];    // Number of processors in each dimension
   factorize2d(size, dims);
-  int periodicity[] = {0,1};
+  int periodicity[] = {0,1}; // Open x, periodic along y
 
   if (rank == 0)
     printf("dims = (%d X %d)\n", dims[0], dims[1]);
@@ -38,20 +38,22 @@ int main(int argc, char** argv)
   MPI_Comm comm_cart;
 
   ierr = MPI_Cart_create(MPI_COMM_WORLD, // input communicator
-                           2,              // number of dimensions
-                           dims,     // k x l grid
-                           periodicity,     // open in x, periodic in y
-                           0,              // Don't reorder processes
-                           &comm_cart      // output communicator
-                           );
+                         2,              // number of dimensions
+                         dims,           // dims[0] x dims[1] grid
+                         periodicity,    // open in x, periodic in y
+                         0,              // Don't reorder processes/ranks
+                         &comm_cart      // output communicator
+                         );
 
   int coords[2];
-  MPI_Cart_coords(comm_cart,
-                  rank,
-                  2,
-                  coords
+  // rank -> cartesian coordinates
+  MPI_Cart_coords(comm_cart,  // needed to tell coordinates structure
+                  rank,       // current rank
+                  2,          // two dimensions
+                  coords      // output cartesian coordinates of current rank
                   );
   printf("Co-ordinates of rank %d are %d x %d\n", rank, coords[0], coords[1]);
+  // cartesian coordinates -> rank
   if (rank == size-1)
     for (int i = 0; i < dims[0]; i++)
       for (int j = 0; j < dims[1]; j++)
@@ -104,18 +106,18 @@ dims[ndims] = Specifying the number of processors in each dimension
 // Summary
 
 In a 2D problem, it can be hard to keep track of which process is
-the neighbouring process of which, info that is naturally needed. 
-That is why we renumber the processes in cartesian coordinates. 
+the neighbouring process of which, info that is naturally needed.
+That is why we renumber the processes in cartesian coordinates.
 0,1,2,3 can be renumbered as {(0,0),(0,1),(1,0),(1,1)}
 MPI_Cart_create() does it for us.
 
 // Communicator
 
-Communicator is the set of cpu allocated to the problem. 
+Communicator is the set of cpu allocated to the problem.
 MPI_COMM_WORLD is the default communicator which contains all cpu allocated to our mpirun.
-I guess a communicator is an object containing ranks
+I guess a communicator is an object containing ranks and their ordering
 
-MPI_Cart_create generates a new "cartesian" communicator which can be used to 
+MPI_Cart_create generates a new "cartesian" communicator which can be used to
 refer to the topology. Its syntax from mpich.org is
 
 int MPI_Cart_create(
@@ -134,11 +136,11 @@ int MPI_Cart_create(
                                          // may be different from comm_old
 
 
-                    MPI_Comm *comm_cart  // the communicator output with new 
+                    MPI_Comm *comm_cart  // the communicator output with new
                                          // cartesian topology (handle. ?)
                     )
 
-// Notice that this does not mention the actual problem size. Apparently, 
+// Notice that this does not mention the actual problem size. Apparently,
 'it's the user's job to take care of data distribution. All MPI can do is
 keep track of data distribution'.
 
@@ -147,7 +149,7 @@ keep track of data distribution'.
 int MPI_Cart_coords(
                     MPI_Comm comm, // Communicator of the cartesian topology
                     int rank,      // Rank of process within cartesian topology
-                    int maxdims,   // length of vector 'coords' 
+                    int maxdims,   // length of vector 'coords'
                                    // (in the calling program. ?)
                     int coords[]   // Vector to store the coordinates in
                     )

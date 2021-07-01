@@ -76,10 +76,8 @@ void recv_value(int source, int dest_index,
   return;
 }
 
-// Can these be merged with MPI_Reduce?
-
 void update_ghost(double u0[], int myN, // Maybe find size yourself?
-                                         // That'll fix the uneven size of last array
+                                        // That'll fix the uneven size of last array
                   int rank, int size,
                   MPI_Request recv_req[2], // left, right
                   MPI_Request send_req[2]  // left, right
@@ -90,10 +88,8 @@ void update_ghost(double u0[], int myN, // Maybe find size yourself?
     u0[0] = u0[myN], u0[myN+1] = u0[1];
     return;
   }
-  // Upstream version merged the three cases by defining 
-  // int left, right
-  // That's much better.
-  if (rank==0)
+  // TODO: Should cases be merged into send_value, recv value as in upstream?
+  if (rank==0) // left most processor
   {
     recv_value(size-1, 0    , &recv_req[0], u0); // fill my u[ 0] by size-1
     recv_value(1     , myN+1, &recv_req[1], u0); // fill my u[-1] by rank+1
@@ -157,7 +153,8 @@ int main(int argc, char** argv)
   double sigma = coeff * cfl;
   double dt = cfl * dx / fabs(coeff);
 
-  print("dt = %f\n", dt);
+  if (rank == 0)
+    printf("dt = %f\n", dt);
   
   // Grid points per processor
   int myN = (int) floor(N/size);                     
@@ -213,5 +210,7 @@ int main(int argc, char** argv)
 // Maybe write in such a way that all the parallel computing stuff is put
 // outside as functions
 
-// TODO -  Replace MPI_Irecv with MPI_Reduce?
+// TODO -  Replace MPI_Irecv with MPI_Reduce? Not at all possible, MPI_Reduce 
+// handles an operation that links ALL processes. These are point-to-point 
+// operations
 // TODO -  Read parameters from a header file.
